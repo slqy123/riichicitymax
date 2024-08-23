@@ -5,9 +5,10 @@ from struct import unpack, pack
 import json
 from rich import print
 from pydantic import BaseModel
-from typing import Dict
+from typing import DefaultDict
 from collections import defaultdict
 from pathlib import Path
+from itertools import chain
 
 # hexyl = Command("hexyl")
 
@@ -17,9 +18,9 @@ class UserData(BaseModel):
     roleID: int = 10001
     titleID: int = 0
     headID: int = 100010000
-    skinIDs: Dict[int, int] = defaultdict(int)
-    models: Dict[int, int] = defaultdict(int)
-    equiped_items: Dict[int, int] = defaultdict(int)
+    skinIDs: DefaultDict[int, int] = defaultdict(int)
+    models: DefaultDict[int, int] = defaultdict(int)
+    equiped_items: DefaultDict[int, int] = defaultdict(int)
 
     def save_data(self):
         with open("user_data.json", "w") as f:
@@ -87,17 +88,21 @@ class Websocket:
                     continue
                 player_user = player["user"]
                 player_user["role_id"] = user_data.roleID
-                player_user["riichi_stick_id"] = user_data.equiped_items[13]
-                player_user["riichi_effect_id"] = user_data.equiped_items[17]
-                player_user["card_back_id"] = user_data.equiped_items[14]
-                player_user["tablecloth_id"] = user_data.equiped_items[15]
-                player_user["special_effect_id"] = user_data.equiped_items[16]
-                player_user["profile_frame_id"] = user_data.equiped_items[30]
-                player_user["game_music_id"] = user_data.equiped_items[19]
-                player_user["match_music_id"] = user_data.equiped_items[19]
-                player_user["riichi_music_id"] = user_data.equiped_items[20]
-                player_user["card_face_id"] = user_data.equiped_items[26]
-                player_user["table_frame_id"] = user_data.equiped_items[36]
+                for key, val in [
+                        ('riichi_stick_id', user_data.equiped_items[13]),
+                        ('riichi_effect_id', user_data.equiped_items[17]),
+                        ('card_back_id', user_data.equiped_items[14]),
+                        ('tablecloth_id', user_data.equiped_items[15]),
+                        ('special_effect_id', user_data.equiped_items[16]),
+                        ('profile_frame_id', user_data.equiped_items[30]),
+                        ('game_music_id', user_data.equiped_items[19]),
+                        ('match_music_id', user_data.equiped_items[19]),
+                        ('riichi_music_id', user_data.equiped_items[20]),
+                        ('card_face_id', user_data.equiped_items[26]),
+                        ('table_frame_id', user_data.equiped_items[36]),
+                        ]:
+                    if val:
+                        player_user[key] = val
                 player_user["model"] = user_data.model
                 break
                 """
@@ -277,6 +282,8 @@ class Http:
             user_data.headID = data["headID"]
             user_data.save_data()
             flow.response = http.Response.make(content=OK_BYTES)
+        elif flow.request.path == '/mixed_client/clearRedDot':
+            flow.response = http.Response.make(content=OK_BYTES)
 
         # elif flow.request.path == '/backpack/userItemList':
         #     if flow.is_replay == "request":
@@ -337,9 +344,14 @@ class Http:
         add_item(36, 20)  # 桌框
 
         # 显示已装备的物品
-        for _, item_id in user_data.equiped_items.items():
-            if item_id in items_dict:
-                items_dict[item_id]["isEquip"] = True
+        # for _, item_id in user_data.equiped_items.items():
+        #     if item_id in items_dict:
+        #         items_dict[item_id]["isEquip"] = True
+        for item_type in chain(range(13, 21), [24, 25, 26, 30, 36]):
+            if user_data.equiped_items[item_type]:
+                items_dict[user_data.equiped_items[item_type]]["isEquip"] = True
+            else:
+                items_dict[item_type * 1000 + 1]["isEquip"] = True
 
         return list(items_dict.values())
 
