@@ -1,10 +1,10 @@
 # 麻雀一番街MAX
 模仿[雀魂MAX](https://github.com/Avenshy/MajsoulMax)的麻雀一番街全解锁工具。
-目前支持解锁：角色，皮肤，桌布，麻将牌，BGM，特效等。
+目前支持解锁：角色，皮肤，桌布，麻将牌，BGM，特效，AI等。
 
 目前仍处于开发阶段，可能会有各种不稳定因素，使用前请做好心理准备。
 
-接下来准备继续完善一下细节，另外有考虑添加基于[Akagi](https://github.com/shinkuan/Akagi)的AI功能。
+接下来准备继续完善一下细节，另外有考虑添加基于[Akagi](https://github.com/shinkuan/Akagi)的AI功能。（2024-08-24：查了下作者本人好像已经做过了，把[Riki](https://github.com/shinkuan/Riki)的实现搬过来稍微改了改，就这样了）
 
 # 使用方法
 
@@ -31,6 +31,9 @@ cd <path/to/project> && sudo -u test mitmdump -p 8082 -s addons.py --mode transp
 ```
 其中新用户名我取为test，端口为8082，这两个可自行更改。
 由于涉及系统层面的修改，运行之前请明确自己知道自己在做什么。
+> 这里还可以考虑用GID来过滤流量，iptables参数改成 `--gid-owner <some gid>`，再用 `sg <some gid> <command>` 运行，可以避免切换用户配环境的麻烦事。
 
 # 目前的一些小问题
 打开背包时间过长，且第一次装备装备可能需要等待很长时间，因此若点击没反应请不要重复点击。（没找到返回所有装备信息的API，只能遍历所有ID，因此会添加很多无效的ID，导致客户端处理缓慢。所有装备的ID信息似乎是存在本地？可能解包一下会有收获？TODO）
+
+测试体验下来好多奇奇怪怪的小bug，不过能正常运行就行，细节的东西日后再打磨吧，随缘了，本人也只是个轻度玩家。
