@@ -4,45 +4,18 @@ from io import BytesIO
 from struct import unpack, pack
 import json
 from rich import print
-from pydantic import BaseModel
-from typing import DefaultDict
-from collections import defaultdict
 from pathlib import Path
 from itertools import chain
 
+import sys
+sys.path.append('.')
+from rctypes import UserData
+from consts import OK, OK_BYTES
+from manager import RCManager
+
 # hexyl = Command("hexyl")
 
-
-class UserData(BaseModel):
-    USER_ID: int = -1  # will init after 'user/emailLogin'
-    roleID: int = 10001
-    titleID: int = 0
-    headID: int = 100010000
-    skinIDs: DefaultDict[int, int] = defaultdict(int)
-    models: DefaultDict[int, int] = defaultdict(int)
-    equiped_items: DefaultDict[int, int] = defaultdict(int)
-
-    def save_data(self):
-        with open("user_data.json", "w") as f:
-            print("Saving user data...")
-            f.write(self.model_dump_json())
-
-    @property
-    def skinID(self):
-        return self.skinIDs[self.roleID]
-
-    @skinID.setter
-    def skinID(self, value: int):
-        self.skinIDs[self.roleID] = value
-
-    @property
-    def model(self):
-        return self.models[self.roleID]
-
-    @model.setter
-    def model(self, value: int):
-        self.models[self.roleID] = value
-
+manager = RCManager()
 
 data_path = Path("user_data.json")
 if data_path.exists():
@@ -50,8 +23,6 @@ if data_path.exists():
 else:
     user_data = UserData()
 
-OK = {"code": 0, "data": True, "message": "ok"}
-OK_BYTES = json.dumps(OK, ensure_ascii=False).encode("utf-8")
 
 
 class Websocket:
@@ -76,11 +47,14 @@ class Websocket:
         n1, n2 = unpack(">HB", content.read(3))  # 不知道是什么意思
 
         data = json.loads(content.read())
+        if not isinstance(data.get("cmd"), str):
+            return
         print(message.from_client, data)
-        if data.get("cmd") == "cmd_game_action_brc":
-            action = data["data"]["action_info"][0]
-            print("---", action["action"], action["card"], "---")
-        elif data.get("cmd") == "cmd_enter_room":
+        if data.get("uid") is not None:
+            print('UID from', data)
+        if data['cmd'].startswith('cmd_'):
+            manager.put(data)
+        if data.get("cmd") == "cmd_enter_room":
             if message.injected:
                 return
             for player in data["data"]["players"]:
@@ -88,6 +62,9 @@ class Websocket:
                     continue
                 player_user = player["user"]
                 player_user["role_id"] = user_data.roleID
+                player_user["skin_id"] = user_data.skinID
+                player_user["title_id"] = user_data.titleID
+                player_user["model"] = user_data.model
                 for key, val in [
                         ('riichi_stick_id', user_data.equiped_items[13]),
                         ('riichi_effect_id', user_data.equiped_items[17]),
@@ -105,35 +82,6 @@ class Websocket:
                         player_user[key] = val
                 player_user["model"] = user_data.model
                 break
-                """
-                'user': {
-                    'user_id': 214594157,
-                    'nickname': 'Toh Jun Heng',
-                    'avatar': '',
-                    'role_id': 10005,
-                    'skin_id': 0,
-                    'title_id': 0,
-                    'stage_level': 1,
-                    'riichi_stick_id': 13001,
-                    'riichi_effect_id': 17001,
-                    'card_back_id': 14001,
-                    'tablecloth_id': 15001,
-                    'special_effect_id': 16001,
-                    'head_tag': 0,
-                    'profile_frame_id': 30000,
-                    'head_id': 0,
-                    'game_music_id': 19001,
-                    'riichi_music_id': 20001,
-                    'match_music_id': 19001,
-                    'card_face_id': 26001,
-                    'table_frame_id': 36001,
-                    'is_self_manager': False,
-                    'model': 0,
-                    'stage_level_pt': 0,
-                    'new_stage_level': 0,
-                    'new_stage_level_pt': 0
-                },
-                """
             else:
                 assert False
             modified_data = json.dumps(data).encode("utf-8")
@@ -205,6 +153,7 @@ class Http:
                 resp["profileFrameID"] = user_data.equiped_items[30]
         elif flow.request.path == "/users/emailLogin":
             user_data.USER_ID = resp["data"]["user"]["id"]
+            manager.userID = user_data.USER_ID
             user_data.save_data()
         elif flow.request.path == "/backpack/userItemList":
             resp["data"] = self.extend_items(resp["data"])
@@ -262,7 +211,12 @@ class Http:
         # print(flow.request.method, flow.request.path)
         # print(flow.request.content)
         # print(flow.request.json())
-        data = flow.request.json() if flow.request.content else {}
+        try:
+            data = flow.request.json() if flow.request.content else {}
+        except json.JSONDecodeError:
+            print("json decode error", flow.request.text)
+            return
+
         if flow.request.path == "/users/updateRoleInfo":
             user_data.roleID = data["roleID"]
             user_data.skinID = data["skinID"]
