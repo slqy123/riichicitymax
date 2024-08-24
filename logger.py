@@ -1,4 +1,5 @@
 import logging
+import sys
 from colorlog import ColoredFormatter
 
 logger = logging.getLogger('riichi')
@@ -11,7 +12,7 @@ formatter = ColoredFormatter(
     reset=True,
 )
 
-handler = logging.StreamHandler()
+handler = logging.StreamHandler(stream=sys.stdout)
 handler.setFormatter(formatter)
 handler.setLevel(logging.DEBUG)
 

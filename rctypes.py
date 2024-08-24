@@ -41,14 +41,14 @@ class RCMessage(BaseModel):
 
 class GameStatus:
     def __init__(self):
-        self.uid = -1
+        self.userID = -1
         self.seat = -1
         self.tehai = []
         self.tsumo = None
 
         self.last_dahai_actor = -1
 
-        self.player_list = []
+        self.seat2id = [0, 0, 0, 0]
         self.dora_markers = []
 
         self.is_3p = False

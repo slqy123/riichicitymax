@@ -10,11 +10,12 @@ from itertools import chain
 import sys
 sys.path.append('.')
 from rctypes import UserData
+from consts import OK, OK_BYTES
+from manager import RCManager
 
 # hexyl = Command("hexyl")
 
-
-
+manager = RCManager()
 
 data_path = Path("user_data.json")
 if data_path.exists():
@@ -46,11 +47,14 @@ class Websocket:
         n1, n2 = unpack(">HB", content.read(3))  # 不知道是什么意思
 
         data = json.loads(content.read())
+        if not isinstance(data.get("cmd"), str):
+            return
         print(message.from_client, data)
-        if data.get("cmd") == "cmd_game_action_brc":
-            action = data["data"]["action_info"][0]
-            print("---", action["action"], action["card"], "---")
-        elif data.get("cmd") == "cmd_enter_room":
+        if data.get("uid") is not None:
+            print('UID from', data)
+        if data['cmd'].startswith('cmd_'):
+            manager.put(data)
+        if data.get("cmd") == "cmd_enter_room":
             if message.injected:
                 return
             for player in data["data"]["players"]:
@@ -58,6 +62,9 @@ class Websocket:
                     continue
                 player_user = player["user"]
                 player_user["role_id"] = user_data.roleID
+                player_user["skin_id"] = user_data.skinID
+                player_user["title_id"] = user_data.titleID
+                player_user["model"] = user_data.model
                 for key, val in [
                         ('riichi_stick_id', user_data.equiped_items[13]),
                         ('riichi_effect_id', user_data.equiped_items[17]),
@@ -146,6 +153,7 @@ class Http:
                 resp["profileFrameID"] = user_data.equiped_items[30]
         elif flow.request.path == "/users/emailLogin":
             user_data.USER_ID = resp["data"]["user"]["id"]
+            manager.userID = user_data.USER_ID
             user_data.save_data()
         elif flow.request.path == "/backpack/userItemList":
             resp["data"] = self.extend_items(resp["data"])
@@ -203,7 +211,12 @@ class Http:
         # print(flow.request.method, flow.request.path)
         # print(flow.request.content)
         # print(flow.request.json())
-        data = flow.request.json() if flow.request.content else {}
+        try:
+            data = flow.request.json() if flow.request.content else {}
+        except json.JSONDecodeError:
+            print("json decode error", flow.request.text)
+            return
+
         if flow.request.path == "/users/updateRoleInfo":
             user_data.roleID = data["roleID"]
             user_data.skinID = data["skinID"]
