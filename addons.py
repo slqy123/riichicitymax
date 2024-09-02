@@ -47,9 +47,9 @@ class Websocket:
         n1, n2 = unpack(">HB", content.read(3))  # 不知道是什么意思
 
         data = json.loads(content.read())
+        print(message.from_client, data)
         if not isinstance(data.get("cmd"), str):
             return
-        print(message.from_client, data)
         if data.get("uid") is not None:
             print('UID from', data)
         if data['cmd'].startswith('cmd_'):
@@ -283,19 +283,19 @@ class Http:
         # 10 道具
         # 11 礼物
         # 12 觉醒材料
-        add_item(13, 100)  # 立直棒
-        add_item(14, 300)  # 牌背
-        add_item(15, 200)  # 桌布
-        add_item(16, 50)  # 胡牌特效
-        add_item(17, 20)  # 立直特效
-        add_item(18, 20)  # BGM(大厅)
-        add_item(19, 20)  # BGM(对局中)
-        add_item(20, 20)  # BGM(立直)
-        add_item(24, 20)  # 大厅场景
-        add_item(25, 20)  # 主界面特效
-        add_item(26, 20)  # 牌面
-        add_item(30, 20)  # 不知道是啥
-        add_item(36, 20)  # 桌框
+        add_item(13, 46)  # 立直棒
+        add_item(14, 176)  # 牌背
+        add_item(15, 107)  # 桌布
+        add_item(16, 20)  # 胡牌特效
+        add_item(17, 9)  # 立直特效
+        add_item(18, 9)  # BGM(大厅)
+        add_item(19, 10)  # BGM(对局中)
+        add_item(20, 8)  # BGM(立直)
+        add_item(24, 7)  # 大厅场景
+        add_item(25, 7)  # 主界面特效
+        add_item(26, 6)  # 牌面
+        # add_item(30, 20)  # 不知道是啥
+        add_item(36, 8)  # 桌框
 
         # 显示已装备的物品
         # for _, item_id in user_data.equiped_items.items():
@@ -303,7 +303,9 @@ class Http:
         #         items_dict[item_id]["isEquip"] = True
         for item_type in chain(range(13, 21), [24, 25, 26, 30, 36]):
             if user_data.equiped_items[item_type]:
-                items_dict[user_data.equiped_items[item_type]]["isEquip"] = True
+                item = items_dict.get(user_data.equiped_items[item_type])
+                if item is not None:
+                    item["isEquip"] = True
             else:
                 items_dict[item_type * 1000 + 1]["isEquip"] = True
 
