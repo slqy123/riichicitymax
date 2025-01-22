@@ -1,0 +1,36 @@
+index = 1
+[[profiles]]
+roleID = 10024
+skinID = 1002402
+model = 0
+headID = 100010000
+titleID = 12003
+riichi_stick_id = 26
+riichi_effect_id = 5
+card_back_id = 97
+tablecloth_id = 19
+special_effect_id = 15
+profile_frame_id = 411
+game_music_id = 8
+match_music_id = 2
+riichi_music_id = 6
+card_face_id = 3
+table_frame_id = 4
+
+[[profiles]]
+roleID = 10041
+skinID = 1004101
+model = 0
+headID = 100010000
+titleID = 12003
+riichi_stick_id = 26
+riichi_effect_id = 5
+card_back_id = 97
+tablecloth_id = 19
+special_effect_id = 15
+profile_frame_id = 411
+game_music_id = 8
+match_music_id = 12
+riichi_music_id = 6
+card_face_id = 3
+table_frame_id = 4
