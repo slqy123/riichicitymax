@@ -1,4 +1,4 @@
-# 麻雀一番街MAX
+# 麻雀一番街MAX[归档代码，请勿使用]
 模仿[雀魂MAX](https://github.com/Avenshy/MajsoulMax)的麻雀一番街全解锁工具。
 目前支持解锁：角色，皮肤，桌布，麻将牌，BGM，特效，AI等。
 
@@ -7,6 +7,8 @@
 接下来准备继续完善一下细节，另外有考虑添加基于[Akagi](https://github.com/shinkuan/Akagi)的AI功能。（2024-08-24：查了下作者本人好像已经做过了，把[Riki](https://github.com/shinkuan/Riki)的实现搬过来稍微改了改，就这样了）
 
 2024-11-29：一番街好像更新了数据的校验，由于本人目前精力有限，仓库归档，可转用[原作者的版本](https://github.com/Avenshy/RiichiCityUnlock)，虽然不开源且只提供windows可执行文件，但实测wine里运行问题不大。
+
+2025-01-22：把游戏外全解锁的功能禁用了，仅保留游戏内换角色皮肤，相关代码放到ng分支里，main分支依然归档。
 
 # 使用方法
 
