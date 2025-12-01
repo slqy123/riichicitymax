@@ -11,7 +11,6 @@ from itertools import chain
 import sys
 
 sys.path.append(".")
-# from rctypes import UserData
 from consts import OK, OK_BYTES
 from manager import RCManager
 from pydantic import BaseModel
@@ -104,8 +103,6 @@ class UserData(BaseModel):
         return self.profiles[self.index].table_frame_id + 36 * 1000
 
 
-# hexyl = Command("hexyl")
-
 manager = RCManager()
 
 data_path = Path("user_data.toml")
@@ -113,10 +110,12 @@ assert data_path.exists()
 
 
 def reload_user_data():
+    print("Reloading user data...")
     global user_data
     user_data = UserData.model_validate(
         tomllib.loads(data_path.read_text(encoding="utf-8"))
     )
+    print(user_data.index, user_data.profiles)
 
 
 reload_user_data()
@@ -145,11 +144,14 @@ class Websocket:
         n1, n2 = unpack(">HB", content.read(3))  # 不知道是什么意思
 
         data = json.loads(content.read())
-        print(message.from_client, data)
+        print("client:" if message.from_client else "server:", data)
+        if data.get("uid") is not None and message.from_client:
+            global USER_ID
+            USER_ID = int(data["uid"])
+            manager.userID = USER_ID
+            print(f"Set USER_ID to {USER_ID}")
         if not isinstance(data.get("cmd"), str):
             return
-        if data.get("uid") is not None:
-            print("UID from", data)
         if data["cmd"].startswith("cmd_"):
             manager.put(data)
         if data.get("cmd") == "cmd_enter_room":
@@ -200,19 +202,19 @@ class Websocket:
             )
 
 
-class Http:
-    def response(self, flow: http.HTTPFlow):
-        global USER_ID
-        if flow.response is None:
-            return
-        if not flow.response.content:
-            return
-        resp = flow.response.json()
-        if flow.request.path == "/users/emailLogin":
-            USER_ID = resp["data"]["user"]["id"]
-            manager.userID = USER_ID
+# class Http:
+#     def response(self, flow: http.HTTPFlow):
+#         global USER_ID
+#         if flow.response is None:
+#             return
+#         if not flow.response.content:
+#             return
+#         resp = flow.response.json()
+#         if flow.request.path == "/users/emailLogin":
+#             USER_ID = resp["data"]["user"]["id"]
+#             manager.userID = USER_ID
 
 
 # addons = [Websocket(), Http()]
-addons = [Websocket(), Http()]
+addons = [Websocket()]
 # addons = []

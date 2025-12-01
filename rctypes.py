@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from collections import defaultdict
 from typing import DefaultDict
 
+
 class UserData(BaseModel):
     USER_ID: int = -1  # will init after 'user/emailLogin'
     roleID: int = 10001

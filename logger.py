@@ -2,7 +2,7 @@ import logging
 import sys
 from colorlog import ColoredFormatter
 
-logger = logging.getLogger('riichi')
+logger = logging.getLogger("riichi")
 
 logger.setLevel(logging.DEBUG)
 

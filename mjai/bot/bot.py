@@ -24,7 +24,7 @@ class Bot:
                 api_key = online_json["api_key"]
                 server = online_json["server"]
                 headers = {
-                    'Authorization': api_key,
+                    "Authorization": api_key,
                 }
                 r = requests.post(f"{server}/check", headers=headers)
                 r_json = r.json()
@@ -32,7 +32,7 @@ class Bot:
                     self.model_hash = "online"
         except Exception as e:
             # logger.error(e)
-            print('error', e)
+            print("error", e)
             self.online = False
 
     def react(self, events: str) -> str:
@@ -45,7 +45,9 @@ class Bot:
         time_elapsed = time.time() - start
 
         if return_action is None:
-            return json.dumps({"type":"none", "time":time_elapsed}, separators=(",", ":"))
+            return json.dumps(
+                {"type": "none", "time": time_elapsed}, separators=(",", ":")
+            )
         else:
             raw_data = json.loads(return_action)
             raw_data["time"] = time_elapsed
@@ -55,7 +57,7 @@ class Bot:
 
     def state(self):
         return self.model.state
-        
+
 
 def main():
     player_id = int(sys.argv[1])

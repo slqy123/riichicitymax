@@ -5,6 +5,7 @@ Docker コンテナに submission file を配置して実行するためのラ�
 2. Docker コンテナに submission file のアーカイブを展開する
 3. Docker コンテナ内で `python/mjai/http_server/server.py` を実行する
 """
+
 import json
 import shutil
 import subprocess
@@ -14,8 +15,10 @@ from pathlib import Path
 import requests
 from mjai.exceptions import EngineRuntimeError, TimeoutExpired
 from .bot.bot import Bot
+
 try:
     from .bot_3p.bot import Bot as Bot3p
+
     three_player = True
 except Exception:
     three_player = False
@@ -33,7 +36,7 @@ class MjaiPlayerClient:
 
         self.bot = None
 
-    def launch_bot(self, player_id: int, is_3p = False) -> None:
+    def launch_bot(self, player_id: int, is_3p=False) -> None:
         self.player_id = player_id
         if is_3p:
             if not three_player:

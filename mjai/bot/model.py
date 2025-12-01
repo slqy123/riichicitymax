@@ -13,6 +13,7 @@ from functools import partial
 from itertools import permutations
 import riichi
 
+
 class ChannelAttention(nn.Module):
     def __init__(self, channels, ratio=16, actv_builder=nn.ReLU, bias=True):
         super().__init__()
@@ -33,14 +34,15 @@ class ChannelAttention(nn.Module):
         x = weight.unsqueeze(-1) * x
         return x
 
+
 class ResBlock(nn.Module):
     def __init__(
         self,
         channels,
         *,
-        norm_builder = nn.Identity,
-        actv_builder = nn.ReLU,
-        pre_actv = False,
+        norm_builder=nn.Identity,
+        actv_builder=nn.ReLU,
+        pre_actv=False,
     ):
         super().__init__()
         self.pre_actv = pre_actv
@@ -73,6 +75,7 @@ class ResBlock(nn.Module):
             out = self.actv(out)
         return out
 
+
 class ResNet(nn.Module):
     def __init__(
         self,
@@ -80,22 +83,26 @@ class ResNet(nn.Module):
         conv_channels,
         num_blocks,
         *,
-        norm_builder = nn.Identity,
-        actv_builder = nn.ReLU,
-        pre_actv = False,
+        norm_builder=nn.Identity,
+        actv_builder=nn.ReLU,
+        pre_actv=False,
     ):
         super().__init__()
 
         blocks = []
         for _ in range(num_blocks):
-            blocks.append(ResBlock(
-                conv_channels,
-                norm_builder = norm_builder,
-                actv_builder = actv_builder,
-                pre_actv = pre_actv,
-            ))
+            blocks.append(
+                ResBlock(
+                    conv_channels,
+                    norm_builder=norm_builder,
+                    actv_builder=actv_builder,
+                    pre_actv=pre_actv,
+                )
+            )
 
-        layers = [nn.Conv1d(in_channels, conv_channels, kernel_size=3, padding=1, bias=False)]
+        layers = [
+            nn.Conv1d(in_channels, conv_channels, kernel_size=3, padding=1, bias=False)
+        ]
         if pre_actv:
             layers += [*blocks, norm_builder(), actv_builder()]
         else:
@@ -110,6 +117,7 @@ class ResNet(nn.Module):
 
     def forward(self, x):
         return self.net(x)
+
 
 class Brain(nn.Module):
     def __init__(self, *, conv_channels, num_blocks, is_oracle=False, version=1):
@@ -138,24 +146,28 @@ class Brain(nn.Module):
             case 2:
                 pass
             case 3 | 4:
-                norm_builder = partial(nn.BatchNorm1d, conv_channels, momentum=0.01, eps=1e-3)
+                norm_builder = partial(
+                    nn.BatchNorm1d, conv_channels, momentum=0.01, eps=1e-3
+                )
             case _:
-                raise ValueError(f'Unexpected version {self.version}')
+                raise ValueError(f"Unexpected version {self.version}")
 
         self.encoder = ResNet(
-            in_channels = in_channels,
-            conv_channels = conv_channels,
-            num_blocks = num_blocks,
-            norm_builder = norm_builder,
-            actv_builder = actv_builder,
-            pre_actv = pre_actv,
+            in_channels=in_channels,
+            conv_channels=conv_channels,
+            num_blocks=num_blocks,
+            norm_builder=norm_builder,
+            actv_builder=actv_builder,
+            pre_actv=pre_actv,
         )
         self.actv = actv_builder()
 
         # always use EMA or CMA when True
         self._freeze_bn = False
 
-    def forward(self, obs, invisible_obs: Optional[Tensor] = None) -> Union[Tuple[Tensor, Tensor], Tensor]:
+    def forward(
+        self, obs, invisible_obs: Optional[Tensor] = None
+    ) -> Union[Tuple[Tensor, Tensor], Tensor]:
         if self.is_oracle:
             assert invisible_obs is not None
             obs = torch.cat((obs, invisible_obs), dim=1)
@@ -170,7 +182,7 @@ class Brain(nn.Module):
             case 2 | 3 | 4:
                 return self.actv(phi)
             case _:
-                raise ValueError(f'Unexpected version {self.version}')
+                raise ValueError(f"Unexpected version {self.version}")
 
     def train(self, mode=True):
         super().train(mode)
@@ -191,6 +203,7 @@ class Brain(nn.Module):
         self._freeze_bn = value
         return self.train(self.training)
 
+
 class AuxNet(nn.Module):
     def __init__(self, dims=None):
         super().__init__()
@@ -199,6 +212,7 @@ class AuxNet(nn.Module):
 
     def forward(self, x):
         return self.net(x).split(self.dims, dim=-1)
+
 
 class DQN(nn.Module):
     def __init__(self, *, version=1):
@@ -230,13 +244,15 @@ class DQN(nn.Module):
         else:
             v = self.v_head(phi)
             a = self.a_head(phi)
-        a_sum = a.masked_fill(~mask, 0.).sum(-1, keepdim=True)
+        a_sum = a.masked_fill(~mask, 0.0).sum(-1, keepdim=True)
         mask_sum = mask.sum(-1, keepdim=True)
         a_mean = a_sum / mask_sum
         q = (v + a - a_mean).masked_fill(~mask, -torch.inf)
         return q
-    
+
+
 online_valid = False
+
 
 class MortalEngine:
     def __init__(
@@ -245,21 +261,21 @@ class MortalEngine:
         dqn,
         is_oracle,
         version,
-        device = None,
-        stochastic_latent = False,
-        enable_amp = False,
-        enable_quick_eval = True,
-        enable_rule_based_agari_guard = False,
-        name = 'NoName',
-        boltzmann_epsilon = 0,
-        boltzmann_temp = 1,
-        top_p = 1,
-        online = False,
-        api_key = None,
-        server = None,
+        device=None,
+        stochastic_latent=False,
+        enable_amp=False,
+        enable_quick_eval=True,
+        enable_rule_based_agari_guard=False,
+        name="NoName",
+        boltzmann_epsilon=0,
+        boltzmann_temp=1,
+        top_p=1,
+        online=False,
+        api_key=None,
+        server=None,
     ):
-        self.engine_type = 'mortal'
-        self.device = device or torch.device('cpu')
+        self.engine_type = "mortal"
+        self.device = device or torch.device("cpu")
         assert isinstance(self.device, torch.device)
         self.brain = brain.to(self.device).eval()
         self.dqn = dqn.to(self.device).eval()
@@ -280,7 +296,7 @@ class MortalEngine:
         self.api_key = api_key
         self.server = server
         if self.online:
-            assert self.version == 4, 'To use online, local model version must be 4'
+            assert self.version == 4, "To use online, local model version must be 4"
 
     def react_batch(self, obs, masks, invisible_obs):
         if self.online:
@@ -289,23 +305,30 @@ class MortalEngine:
                 list_obs = [o.tolist() for o in obs]
                 list_masks = [m.tolist() for m in masks]
                 post_data = {
-                    'obs': list_obs,
-                    'masks': list_masks,
+                    "obs": list_obs,
+                    "masks": list_masks,
                 }
-                data = json.dumps(post_data, separators=(',', ':'))
-                compressed_data = gzip.compress(data.encode('utf-8'))
+                data = json.dumps(post_data, separators=(",", ":"))
+                compressed_data = gzip.compress(data.encode("utf-8"))
                 headers = {
-                    'Authorization': self.api_key,
-                    'Content-Encoding': 'gzip',
+                    "Authorization": self.api_key,
+                    "Content-Encoding": "gzip",
                 }
-                r = requests.post(f'{self.server}/react_batch',
+                r = requests.post(
+                    f"{self.server}/react_batch",
                     headers=headers,
                     data=compressed_data,
-                    timeout=2)
+                    timeout=2,
+                )
                 assert r.status_code == 200
                 online_valid = True
                 r_json = r.json()
-                return r_json['actions'], r_json['q_out'], r_json['masks'], r_json['is_greedy']
+                return (
+                    r_json["actions"],
+                    r_json["q_out"],
+                    r_json["masks"],
+                    r_json["is_greedy"],
+                )
             except:
                 online_valid = False
                 pass
@@ -321,7 +344,9 @@ class MortalEngine:
         masks = torch.as_tensor(np.stack(masks, axis=0), device=self.device)
         invisible_obs = None
         if self.is_oracle:
-            invisible_obs = torch.as_tensor(np.stack(invisible_obs, axis=0), device=self.device)
+            invisible_obs = torch.as_tensor(
+                np.stack(invisible_obs, axis=0), device=self.device
+            )
         batch_size = obs.shape[0]
 
         match self.version:
@@ -337,7 +362,13 @@ class MortalEngine:
                 q_out = self.dqn(phi, masks)
 
         if self.boltzmann_epsilon > 0:
-            is_greedy = torch.full((batch_size,), 1-self.boltzmann_epsilon, device=self.device).bernoulli().to(torch.bool)
+            is_greedy = (
+                torch.full(
+                    (batch_size,), 1 - self.boltzmann_epsilon, device=self.device
+                )
+                .bernoulli()
+                .to(torch.bool)
+            )
             logits = (q_out / self.boltzmann_temp).masked_fill(~masks, -torch.inf)
             sampled = sample_top_p(logits, self.top_p)
             actions = torch.where(is_greedy, q_out.argmax(-1), sampled)
@@ -345,6 +376,7 @@ class MortalEngine:
             is_greedy = torch.ones(batch_size, dtype=torch.bool, device=self.device)
             actions = q_out.argmax(-1)
         return actions.tolist(), q_out.tolist(), masks.tolist(), is_greedy.tolist()
+
 
 def sample_top_p(logits, p):
     if p >= 1:
@@ -355,22 +387,23 @@ def sample_top_p(logits, p):
     probs_sort, probs_idx = probs.sort(-1, descending=True)
     probs_sum = probs_sort.cumsum(-1)
     mask = probs_sum - probs_sort > p
-    probs_sort[mask] = 0.
+    probs_sort[mask] = 0.0
     sampled = probs_idx.gather(-1, probs_sort.multinomial(1)).squeeze(-1)
     return sampled
+
 
 def load_model(seat: int) -> riichi.mjai.Bot:
     engine = get_engine()
     bot = riichi.mjai.Bot(engine, seat)
     return bot
 
-def get_engine() -> MortalEngine:
 
+def get_engine() -> MortalEngine:
     # check if GPU is available
     if torch.cuda.is_available():
-        device = torch.device('cuda')
+        device = torch.device("cuda")
     else:
-        device = torch.device('cpu')
+        device = torch.device("cpu")
 
     # control_state_file = "./mortal_offline_v6_510k.pth"
 
@@ -381,30 +414,34 @@ def get_engine() -> MortalEngine:
     control_state_file = pathlib.Path(__file__).parent / control_state_file
     state = torch.load(control_state_file, map_location=device)
 
-    mortal = Brain(version=state['config']['control']['version'], conv_channels=state['config']['resnet']['conv_channels'], num_blocks=state['config']['resnet']['num_blocks']).eval()
-    dqn = DQN(version=state['config']['control']['version']).eval()
-    mortal.load_state_dict(state['mortal'])
-    dqn.load_state_dict(state['current_dqn'])
+    mortal = Brain(
+        version=state["config"]["control"]["version"],
+        conv_channels=state["config"]["resnet"]["conv_channels"],
+        num_blocks=state["config"]["resnet"]["num_blocks"],
+    ).eval()
+    dqn = DQN(version=state["config"]["control"]["version"]).eval()
+    mortal.load_state_dict(state["mortal"])
+    dqn.load_state_dict(state["current_dqn"])
 
-    with open(pathlib.Path(__file__).parent.parent / 'online.json', 'r') as f:
+    with open(pathlib.Path(__file__).parent.parent / "online.json", "r") as f:
         json_load = json.load(f)
-        server = json_load['server']
-        online = json_load['online']
-        api_key = json_load['api_key']
+        server = json_load["server"]
+        online = json_load["online"]
+        api_key = json_load["api_key"]
 
     engine = MortalEngine(
         mortal,
         dqn,
-        is_oracle = False,
-        device = device,
-        enable_amp = False,
-        enable_quick_eval = False,
-        enable_rule_based_agari_guard = False,
-        name = 'mortal',
-        version = state['config']['control']['version'],
-        online = online,
-        api_key = api_key,
-        server = server,
+        is_oracle=False,
+        device=device,
+        enable_amp=False,
+        enable_quick_eval=False,
+        enable_rule_based_agari_guard=False,
+        name="mortal",
+        version=state["config"]["control"]["version"],
+        online=online,
+        api_key=api_key,
+        server=server,
     )
 
     return engine

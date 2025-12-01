@@ -1,5 +1,6 @@
 import json
 import queue
+import sys
 import threading
 import sh
 
@@ -48,6 +49,7 @@ class RCManager:
         players = data["players"]
         if data["options"]["player_count"] == 3:
             self.status.is_3p = True
+            return
         for player in players:
             position_at = player["position_at"]
             userID = player["user"]["user_id"]
@@ -334,6 +336,8 @@ class RCManager:
         self.status = GameStatus()
 
     def parse(self, item: dict):
+        if self.status.is_3p:
+            return
         assert "cmd" in item and "data" in item
         cmd: str = item["cmd"]
         assert cmd.startswith("cmd_")
@@ -368,56 +372,124 @@ class RCManager:
         notify(json_out)
         return json_out
 
+
 TILE_LIST = [
-    "1m", "2m", "3m", "4m", "5m", "6m", "7m", "8m", "9m",
-    "1p", "2p", "3p", "4p", "5p", "6p", "7p", "8p", "9p",
-    "1s", "2s", "3s", "4s", "5s", "6s", "7s", "8s", "9s",
-    "E",  "S",  "W",  "N",  "P",  "F",  "C", 
-    "5mr", "5pr", "5sr"
+    "1m",
+    "2m",
+    "3m",
+    "4m",
+    "5m",
+    "6m",
+    "7m",
+    "8m",
+    "9m",
+    "1p",
+    "2p",
+    "3p",
+    "4p",
+    "5p",
+    "6p",
+    "7p",
+    "8p",
+    "9p",
+    "1s",
+    "2s",
+    "3s",
+    "4s",
+    "5s",
+    "6s",
+    "7s",
+    "8s",
+    "9s",
+    "E",
+    "S",
+    "W",
+    "N",
+    "P",
+    "F",
+    "C",
+    "5mr",
+    "5pr",
+    "5sr",
 ]
 
 TILE_LIST_CN = [
-        "一万", "二万", "三万", "四万", "五万", "六万", "七万", "八万", "九万",
-        "一饼", "二饼", "三饼", "四饼", "五饼", "六饼", "七饼", "八饼", "九饼",
-        "一索", "二索", "三索", "四索", "五索", "六索", "七索", "八索", "九索",
-        "东",  "南",  "西",  "北",  "白",  "发",  "中",
-        "赤五萬", "赤五饼", "赤五索"
-        ]
+    "一万",
+    "二万",
+    "三万",
+    "四万",
+    "五万",
+    "六万",
+    "七万",
+    "八万",
+    "九万",
+    "一饼",
+    "二饼",
+    "三饼",
+    "四饼",
+    "五饼",
+    "六饼",
+    "七饼",
+    "八饼",
+    "九饼",
+    "一索",
+    "二索",
+    "三索",
+    "四索",
+    "五索",
+    "六索",
+    "七索",
+    "八索",
+    "九索",
+    "东",
+    "南",
+    "西",
+    "北",
+    "白",
+    "发",
+    "中",
+    "赤五萬",
+    "赤五饼",
+    "赤五索",
+]
 
 TILE_2_CN = dict(zip(TILE_LIST, TILE_LIST_CN))
+
+
 def notify(msg: dict):
-    content = ''
-    type_ = msg.get('type') or ''
-    if msg.get('type') == 'reach':
-        content += '[立直]'
-    elif type_ == '':
-        content += '跳过'
-    elif type_ == 'dahai':
-        if msg['tsumogiri']:
-            content += '摸切'
+    content = ""
+    type_ = msg.get("type") or ""
+    if msg.get("type") == "reach":
+        content += "[立直]"
+    elif type_ == "":
+        content += "跳过"
+    elif type_ == "dahai":
+        if msg["tsumogiri"]:
+            content += "摸切"
         else:
-            content += '切'
-    elif type_ == 'chi':
-        content += '吃'
-    elif type_ == 'pon':
-        content += '碰'
-    elif type_ in ('kakan', 'ankan', 'daiminkan'):
-        content += '杠'
-    elif type_ == 'none':
+            content += "切"
+    elif type_ == "chi":
+        content += "吃"
+    elif type_ == "pon":
+        content += "碰"
+    elif type_ in ("kakan", "ankan", "daiminkan"):
+        content += "杠"
+    elif type_ == "none":
         return msg
     else:
         content += type_
-    content += ' '
+    content += " "
 
+    pai = msg.get("pai") or ""
+    content += TILE_2_CN.get(pai, "")
 
-    pai = msg.get('pai') or ''
-    content += TILE_2_CN.get(pai, '')
-
-    if msg.get('type') == 'chi':
-        content += ' '
-        content += '使用 '
-        consumed = msg.get('consumed') or []
-        content += ' '.join([TILE_2_CN.get(p, '') for p in consumed]) or ''
+    if msg.get("type") == "chi":
+        content += " "
+        content += "使用 "
+        consumed = msg.get("consumed") or []
+        content += " ".join([TILE_2_CN.get(p, "") for p in consumed]) or ""
         # content += '| '
-    sh.Command('notify-send')(content, r=29480, a='mjai')
-
+    if sys.platform.startswith("linux"):
+        sh.Command("notify-send")(content, r=29480, a="mjai")
+    else:
+        logger.info(f"MJAI MESSAGE：{content}")
